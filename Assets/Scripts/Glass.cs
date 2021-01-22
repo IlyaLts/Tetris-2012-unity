@@ -18,6 +18,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using System.Collections;
+using TMPro;
 
 namespace IlyaLts.Tetris
 {
@@ -38,10 +39,10 @@ namespace IlyaLts.Tetris
         const float figureFallDelayDecrease = 0.05f;
         const float figureHelperAlpha = 0.33f;
 
-        public Text textScoreCount;
-        public Text textGoalCount;
-        public Text textLevelCount;
-        public Text textRecordCount;
+        public TMP_Text textScoreCount;
+        public TMP_Text textGoalCount;
+        public TMP_Text textLevelCount;
+        public TMP_Text textRecordCount;
         public AudioClip soundDrop;
         public GameObject PanelGameOver;
         public GameObject panelHelp;
@@ -265,6 +266,7 @@ namespace IlyaLts.Tetris
                         scoreGoal = maxScore;
                         gameOver = true;
                         PanelGameOver.SetActive(true);
+                        StopAllCoroutines();
                         return;
                     }
 
