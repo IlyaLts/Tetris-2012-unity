@@ -487,6 +487,23 @@ namespace IlyaLts.Tetris
             }
         }
 
+        IEnumerator TakeScreenshot()
+        {
+            yield return new WaitForEndOfFrame();
+
+            if (!System.IO.Directory.Exists("Screenshots"))
+                System.IO.Directory.CreateDirectory("Screenshots");
+
+            for (int i = 0; ; i++)
+            {
+                if (!System.IO.File.Exists("Screenshots/Screenshot" + Convert.ToString(i) + ".png"))
+                {
+                    ScreenCapture.CaptureScreenshot(System.IO.Directory.GetCurrentDirectory() + "/Screenshots/Screenshot" + Convert.ToString(i) + ".png");
+                    break;
+                }
+            }
+        }
+
         void SaveSettings()
         {
             PlayerPrefs.SetInt("SoundEnabled", Convert.ToInt32(soundEnabled));
@@ -522,20 +539,7 @@ namespace IlyaLts.Tetris
             if (Input.GetKeyDown(KeyCode.F1)) panelHelp.SetActive(!panelHelp.activeSelf);
 
             // Take a screenshot
-            if (Input.GetKeyDown(KeyCode.F12))
-            {
-                if (!System.IO.Directory.Exists("Screenshots"))
-                    System.IO.Directory.CreateDirectory("Screenshots");
-
-                for (int i = 0; ; i++)
-                {
-                    if (!System.IO.File.Exists("Screenshots/Screenshot" + Convert.ToString(i) + ".png"))
-                    {
-                        ScreenCapture.CaptureScreenshot(System.IO.Directory.GetCurrentDirectory() + "/Screenshots/Screenshot" + Convert.ToString(i) + ".png");
-                        break;
-                    }
-                }
-            }
+            if (Input.GetKeyDown(KeyCode.F12)) StartCoroutine(TakeScreenshot());
 
             // Turn on/off sound
             if (Input.GetKeyDown(KeyCode.T))
