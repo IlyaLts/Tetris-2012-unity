@@ -1,8 +1,7 @@
 /*/
 !/Assets
+!/Packages
 !/ProjectSettings
-.vs/
-.consulo/
 *.csproj
 *.unityproj
 *.sln
