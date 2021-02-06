@@ -688,7 +688,7 @@ PlayerSettings:
   apiCompatibilityLevel: 6
   cloudProjectId: ed7f2171-9d8a-45d8-9896-38d6967cf827
   framebufferDepthMemorylessMode: 0
-  projectName: Tetris-2012
+  projectName: Tetris
   organizationId: lib-software
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
