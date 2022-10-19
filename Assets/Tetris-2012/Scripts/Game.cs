@@ -22,22 +22,26 @@ using TMPro;
 
 namespace IlyaLts.Tetris
 {
-    public class Glass : MonoBehaviour
+    public class Game : MonoBehaviour
     {
-        const int numberOfLevels = 15;
+        const int fieldWidth = 10;
+        const int fieldHeight = 20;
+        const float keyDelay = 0.18f;
+        const float figureHelperAlpha = 0.33f;
+
+        const float figureFallStartDelay = 1.0f;
+        const float figureFallDecreaseCoeff = 0.4f;
+        const float defaultKeyDelay = 0.18f;
+        const bool defaultSoundEnabled = true;
+        const bool defaultHelperEnabled = false;
+
         const int scoreFor1Line = 10;
-        const int scoreFor2Lines = 30;
-        const int scoreFor3Lines = 60;
+        const int scoreFor2Lines = 25;
+        const int scoreFor3Lines = 50;
         const int scoreFor4Lines = 100;
         const int startupScoreGoal = 100;
         const int scoreGoalMultiplier = 2;
-        const int maxScore = 999999;
-        const int glassWidth = 10;
-        const int glassHeight = 20;
-        const float keyDelay = 0.15f;
-        const float figureFallDelay = 1.0f;
-        const float figureFallDelayDecrease = 0.05f;
-        const float figureHelperAlpha = 0.33f;
+        const int maxScore = 99999999;
 
         public TMP_Text textScoreCount;
         public TMP_Text textGoalCount;
@@ -60,25 +64,25 @@ namespace IlyaLts.Tetris
         int level;
         int record;
 
-        Block[,] glass = new Block[glassWidth, glassHeight];
         Figure figure = new Figure();
+        GameObject[,] field = new GameObject[fieldWidth, fieldHeight];
         GameObject[,] figureNext = new GameObject[Figure.width, Figure.height];
         GameObject[,] figureHelper = new GameObject[Figure.width, Figure.height];
 
-        void CreateBlock(ref GameObject obj, Vector3 pos, int color, String parentName, float alpha = 1.0f)
+        void CreateBlock(ref GameObject block, Vector3 pos, int color, String parentName, float alpha = 1.0f)
         {
-            obj = Instantiate(block, pos, Quaternion.identity);
-            obj.GetComponent<Image>().sprite = blocks[color];
-            obj.GetComponent<Image>().color = new Color(1.0f, 1.0f, 1.0f, alpha);
-            obj.transform.SetParent(GameObject.Find(parentName).transform, false);
+            block = Instantiate(this.block, pos, Quaternion.identity);
+            block.GetComponent<Image>().sprite = blocks[color];
+            block.GetComponent<Image>().color = new Color(1.0f, 1.0f, 1.0f, alpha);
+            block.transform.SetParent(GameObject.Find(parentName).transform, false);
         }
 
-        void DestroyBlock(ref GameObject obj)
+        void DestroyBlock(ref GameObject block)
         {
-            if (obj)
+            if (block)
             {
-                Destroy(obj);
-                obj = null;
+                Destroy(block.gameObject);
+                block = null;
             }
         }
 
@@ -88,9 +92,10 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < Figure.height; j++)
                 {
-                    if (figure.blocks[i, j].filled)
+                    if (Figure.figures[figure.num, figure.rot, j, i] == 1)
                     {
-                        CreateBlock(ref figure.blocks[i, j].obj, new Vector3(Block.width * (i + figure.x), -Block.height * (j + figure.y), 0.0f), figure.num, "Glass");
+                        Rect rect = block.GetComponent<RectTransform>().rect;
+                        CreateBlock(ref figure.blocks[i, j], new Vector3(rect.width * (i + figure.x), -rect.height * (j + figure.y), 0.0f), figure.num, "Field");
                     }
                 }
             }
@@ -102,9 +107,9 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < Figure.height; j++)
                 {
-                    if (figure.blocks[i, j].filled)
+                    if (figure.blocks[i, j])
                     {
-                        DestroyBlock(ref figure.blocks[i, j].obj);
+                        DestroyBlock(ref figure.blocks[i, j]);
                     }
                 }
             }
@@ -118,9 +123,10 @@ namespace IlyaLts.Tetris
                 {
                     DestroyBlock(ref figureNext[i, j]);
 
-                    if (Figure.figures[figure.numNext, 0, i, j] == 1)
+                    if (Figure.figures[figure.numNext, 0, j, i] == 1)
                     {
-                        CreateBlock(ref figureNext[i, j], new Vector3(Block.width * j, -Block.height * i, 0.0f), figure.numNext, "PanelNextFigure");
+                        Rect rect = block.GetComponent<RectTransform>().rect;
+                        CreateBlock(ref figureNext[i, j], new Vector3(rect.width * i, -rect.height * j, 0.0f), figure.numNext, "PanelNextFigure");
                     }
                 }
             }
@@ -138,10 +144,11 @@ namespace IlyaLts.Tetris
                 {
                     DestroyBlock(ref figureHelper[i, j]);
 
-                    // Don't allow to create a figure helper when the current figure is too low
-                    if (figure.blocks[i, j].filled && figureHelperEnabled && tempY + Figure.height < figure.y)
+                    // Figure helper is shown only if the current figure is higher than its height
+                    if (figureHelperEnabled && figure.blocks[i, j] && tempY + Figure.height < figure.y)
                     {
-                        CreateBlock(ref figureHelper[i, j], new Vector3(Block.width * (i + figure.x), -Block.height * (j + figure.y), 0.0f), figure.num, "Glass", figureHelperAlpha);
+                        Rect rect = block.GetComponent<RectTransform>().rect;
+                        CreateBlock(ref figureHelper[i, j], new Vector3(rect.width * (i + figure.x), -rect.height * (j + figure.y), 0.0f), figure.num, "Field", figureHelperAlpha);
                     }
                 }
             }
@@ -151,21 +158,19 @@ namespace IlyaLts.Tetris
 
         void NewGame()
         {
-            for (int i = 0; i < glassWidth; i++)
-            {
-                for (int j = 0; j < glassHeight; j++)
-                {
-                    glass[i, j].filled = false;
-                    DestroyBlock(ref glass[i, j].obj);
-                }
-            }
+            for (int i = 0; i < fieldWidth; i++)
+                for (int j = 0; j < fieldHeight; j++)
+                    DestroyBlock(ref field[i, j]);
 
+            StopAllCoroutines();
             DestroyFigure();
-            figure.New((glassWidth / 2) - (Figure.width / 2), 0);
+            figure.New((fieldWidth / 2) - (Figure.width / 2), 0);
             UpdateNextFigure();
             CreateFigure();
             UpdateFigureHelper();
 
+            PanelGameOver.GetComponentInChildren<TMP_Text>(true).SetText("GAME OVER!");
+            PanelGameOver.SetActive(false);
             gameOver = false;
             score = 0;
             scoreGoal = startupScoreGoal;
@@ -181,17 +186,15 @@ namespace IlyaLts.Tetris
             StartCoroutine("MoveDownRoutine");
         }
 
-        void BuildFigureIntoGlass()
+        void AddFigureIntoField()
         {
             for (int i = 0; i < Figure.width; i++)
             {
                 for (int j = 0; j < Figure.height; j++)
                 {
-                    if (figure.blocks[i, j].filled)
+                    if (figure.blocks[i, j])
                     {
-                        glass[figure.x + i, figure.y + j].filled = true;
-                        glass[figure.x + i, figure.y + j].clr = figure.blocks[i, j].clr;
-                        glass[figure.x + i, figure.y + j].obj = figure.blocks[i, j].obj;
+                        field[figure.x + i, figure.y + j] = figure.blocks[i, j];
                     }
                 }
             }
@@ -201,13 +204,13 @@ namespace IlyaLts.Tetris
         {
             int numOfFilledLines = 0;
 
-            for (int i = glassHeight - 1; i > 0; i--)
+            for (int i = fieldHeight - 1; i > 0; i--)
             {
                 bool filled = true;
 
-                for (int j = 0; j < glassWidth; j++)
+                for (int j = 0; j < fieldWidth; j++)
                 {
-                    if (!glass[j, i].filled)
+                    if (!field[j, i])
                     {
                         filled = false;
                     }
@@ -215,29 +218,19 @@ namespace IlyaLts.Tetris
 
                 if (filled)
                 {
-                    // Destroy filled lines
-                    for (int j = 0; j < glassWidth; j++)
-                    {
-                        glass[j, i].filled = false;
-                        DestroyBlock(ref glass[j, i].obj);
-                    }
+                    for (int j = 0; j < fieldWidth; j++)
+                        DestroyBlock(ref field[j, i]);
 
-                    // Move upper lines down
+                    // Moves upper lines down
                     for (int len = i; len > 0; len--)
                     {
-                        for (int j = 0; j < glassWidth; j++)
-                        {   
-                            glass[j, len].filled = glass[j, len-1].filled;
-                            glass[j, len].clr = glass[j, len-1].clr;
-                            glass[j, len-1].filled = false;
-
-                            glass[j, len].obj = glass[j, len-1].obj;
-                            glass[j, len-1].obj = null;
-
-                            if (glass[j, len].obj)
+                        for (int j = 0; j < fieldWidth; j++)
+                        {
+                            if (field[j, len - 1])
                             {
-                                Transform vec = glass[j, len].obj.GetComponent<Transform>();
-                                vec.position = new Vector3(vec.position.x, vec.position.y - Block.height, 0.0f);
+                                field[j, len] = field[j, len - 1];
+                                field[j, len - 1] = null;
+                                field[j, len].GetComponent<Block>().Move(0, -1);
                             }
                         }
                     }
@@ -247,7 +240,8 @@ namespace IlyaLts.Tetris
                 }
             }
 
-            if (Convert.ToBoolean(numOfFilledLines))
+            // Scoring
+            if (numOfFilledLines > 0)
             {
                 if (numOfFilledLines == 1)
                     score += scoreFor1Line * level;
@@ -258,20 +252,21 @@ namespace IlyaLts.Tetris
                 else
                     score += scoreFor4Lines * level;
 
-                if (score >= scoreGoal)
+                if (score >= maxScore)
                 {
-                    if (level == numberOfLevels)
-                    {
-                        score = maxScore;
-                        scoreGoal = maxScore;
-                        gameOver = true;
-                        PanelGameOver.SetActive(true);
-                        StopAllCoroutines();
-                        return;
-                    }
-
+                    score = maxScore;
+                    scoreGoal = maxScore;
+                    gameOver = true;
+                    PanelGameOver.GetComponentInChildren<TMP_Text>(true).SetText("MAX SCORE!");
+                    PanelGameOver.SetActive(true);
+                    StopAllCoroutines();
+                    return;
+                }
+                else if (score >= scoreGoal)
+                {
                     level += 1;
                     scoreGoal *= scoreGoalMultiplier;
+                    if (scoreGoal > maxScore) scoreGoal = maxScore;
                 }
 
                 textScoreCount.text = Convert.ToString(score);
@@ -286,12 +281,12 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < Figure.height; j++)
                 {
-                    if (figure.blocks[i, j].filled)
+                    if (figure.blocks[i, j])
                     {
-                        if (j+1 < Figure.height && figure.blocks[i, j + 1].filled && glass[figure.x + i, figure.y + j + 1].filled)
+                        if (j + 1 < Figure.height && figure.blocks[i, j + 1] && field[figure.x + i, figure.y + j + 1])
                             continue;
 
-                        if (figure.y + j + 1 == glassHeight || glass[figure.x + i, figure.y + j + 1].filled)
+                        if (figure.y + j + 1 == fieldHeight || field[figure.x + i, figure.y + j + 1])
                             return true;
                     }
                 }
@@ -304,7 +299,7 @@ namespace IlyaLts.Tetris
         {
             for (int i = 0; i < Figure.width; i++)
                 for (int j = 0; j < Figure.height; j++)
-                    if (figure.blocks[i, j].filled && glass[figure.x + i, figure.y + j].filled)
+                    if (figure.blocks[i, j] && field[figure.x + i, figure.y + j])
                         return false;
 
             return true;
@@ -316,15 +311,16 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < Figure.height; j++)
                 {
-                    if (figure.x + i <= 0 && figure.blocks[i, j].filled)
+                    if (figure.x + i <= 0 && figure.blocks[i, j])
                         return;
 
-                    if (figure.blocks[i, j].filled && glass[figure.x + i - 1, figure.y + j].filled)
+                    if (figure.blocks[i, j] && field[figure.x + i - 1, figure.y + j])
                         return;
                 }
             }
 
             figure.Move(-1, 0);
+            UpdateFigureHelper();
         }
 
         public void MoveRight()
@@ -333,15 +329,16 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < Figure.height; j++)
                 {
-                    if (figure.x + i >= glassWidth - 1 && figure.blocks[i, j].filled)
+                    if (figure.x + i >= fieldWidth - 1 && figure.blocks[i, j])
                         return;
 
-                    if (figure.blocks[i, j].filled && glass[figure.x + i + 1, figure.y + j].filled)
+                    if (figure.blocks[i, j] && field[figure.x + i + 1, figure.y + j])
                         return;
                 }
             }
 
             figure.Move(1, 0);
+            UpdateFigureHelper();
         }
 
         public void MoveDown()
@@ -349,6 +346,7 @@ namespace IlyaLts.Tetris
             if (!IsFigureDropped())
             {
                 figure.Move(0, -1);
+                UpdateFigureHelper();
             }
         }
 
@@ -366,7 +364,7 @@ namespace IlyaLts.Tetris
             int rot = figure.rot + 1;
             if (rot == Figure.numOfRotations) rot = 0;
 
-            // Move the figure right from wall if there is not enough free space to rotate
+            // Moves the figure to the right from the wall if there is not enough free space for rotations
             do
             {
                 flag = true;
@@ -385,12 +383,12 @@ namespace IlyaLts.Tetris
                 if (!flag) MoveRight();
             } while (!flag);
 
-            // Move the figure left from wall if there is not enough free space to rotate
+            // Moves the figure to the left from the wall if there is not enough free space for rotations
             do
             {
                 flag = true;
 
-                for (int i = Figure.width - 1; i > glassWidth - 1 - figure.x; i--)
+                for (int i = Figure.width - 1; i > fieldWidth - 1 - figure.x; i--)
                 {
                     for (int j = 0; j < Figure.height; j++)
                     {
@@ -404,23 +402,26 @@ namespace IlyaLts.Tetris
                 if (!flag) MoveLeft();
             } while (!flag);
 
-            // Don't allow to rotate the figure when it's too low
-            for (int i = Figure.height - 1; i >= 0; i--)
-                for (int j = 0; j < Figure.width; j++)
-                    if (Figure.figures[figure.num, rot, j, i] == 1 && figure.y + j >= glassHeight)
+            for (int i = 0; i < Figure.width; i++)
+            {
+                for (int j = 0; j < Figure.height; j++)
+                {
+                    // Doesn't allow rotations of the figure when it's too low
+                    if (Figure.figures[figure.num, rot, j, i] == 1 && figure.y + j >= fieldHeight)
                         allowRotate = false;
 
-            // Don't allow to rotate the figure if there are any other blocks
-            for (int i = 0; i < Figure.width; i++)
-                for (int j = 0; j < Figure.height; j++)
-                    if (Figure.figures[figure.num, rot, j, i] == 1 && glass[figure.x + i, figure.y + j].filled && Figure.figures[figure.num, figure.rot, j, i] == 0)
+                    // Doesn't allow rotations of the figure if there are any other blocks
+                    if (Figure.figures[figure.num, rot, j, i] == 1 && field[figure.x + i, figure.y + j] && Figure.figures[figure.num, figure.rot, j, i] == 0)
                         allowRotate = false;
+                }
+            }
 
             if (allowRotate)
             {
                 DestroyFigure();
                 figure.Rotate();
                 CreateFigure();
+                UpdateFigureHelper();
             }
             else
             {
@@ -432,59 +433,52 @@ namespace IlyaLts.Tetris
         {
             while (!gameOver)
             {
-                yield return new WaitForSeconds(figureFallDelay - figureFallDelayDecrease * level);
+                yield return new WaitForSeconds(figureFallStartDelay / (1.0f + ((level - 1) * figureFallDecreaseCoeff)));
                 MoveDown();
-                UpdateFigureHelper();
             }
         }
 
         IEnumerator MoveLeftRoutine()
         {
-            while (!gameOver)
+            while (!gameOver && (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)))
             {
-                if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
-                {
-                    MoveLeft();
-                    UpdateFigureHelper();
-                    yield return new WaitForSeconds(keyDelay);
-                }
+                yield return new WaitForSeconds(keyDelay);
 
-                yield return null;
+                if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+                    MoveLeft();
             }
+
+            yield return null;
         }
 
         IEnumerator MoveRightRoutine()
         {
-            while (!gameOver)
+            while (!gameOver && (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)))
             {
+                yield return new WaitForSeconds(keyDelay);
+                
                 if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
-                {
                     MoveRight();
-                    UpdateFigureHelper();
-                    yield return new WaitForSeconds(keyDelay);
-                }
-
-                yield return null;
             }
+
+            yield return null;
         }
 
         IEnumerator MoveDownRoutine()
         {
-            while (!gameOver)
+            while (!gameOver && (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)))
             {
-                if ((Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)))
+                yield return new WaitForSeconds(keyDelay);
+
+                if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
                 {
                     MoveDown();
-                    UpdateFigureHelper();
-
                     StopCoroutine("FallRoutine");
                     StartCoroutine("FallRoutine");
-
-                    yield return new WaitForSeconds(keyDelay);
                 }
-
-                yield return null;
             }
+
+            yield return null;
         }
 
         IEnumerator TakeScreenshot()
@@ -523,18 +517,14 @@ namespace IlyaLts.Tetris
                 textRecordCount.text = Convert.ToString(record);
             }
 
-            if (soundEnabled)
-                AudioListener.volume = 1.0f;
-            else
-                AudioListener.volume = 0.0f;
-
+            AudioListener.volume = soundEnabled ? 1.0f : 0.0f;
             NewGame();
         }
 
         void Update()
         {
             if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
-
+            
             // Show help panel
             if (Input.GetKeyDown(KeyCode.F1)) panelHelp.SetActive(!panelHelp.activeSelf);
 
@@ -545,12 +535,7 @@ namespace IlyaLts.Tetris
             if (Input.GetKeyDown(KeyCode.T))
             {
                 soundEnabled = !soundEnabled;
-
-                if (soundEnabled)
-                    AudioListener.volume = 1.0f;
-                else
-                    AudioListener.volume = 0.0f;
-
+                AudioListener.volume = soundEnabled ? 1.0f : 0.0f;
                 SaveSettings();
             }
 
@@ -558,36 +543,57 @@ namespace IlyaLts.Tetris
             if (Input.GetKeyDown(KeyCode.H))
             {
                 figureHelperEnabled = !figureHelperEnabled;
-                SaveSettings();
                 UpdateFigureHelper();
+                SaveSettings();
             }
 
             // Game logic
             if (!gameOver)
             {
+                // Moves the figure left
+                if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+                {
+                    MoveLeft();
+                    StopCoroutine("MoveLeftRoutine");
+                    StartCoroutine("MoveLeftRoutine");
+                }
+                // Moves the figure right
+                if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+                {
+                    MoveRight();
+                    StopCoroutine("MoveRightRoutine");
+                    StartCoroutine("MoveRightRoutine");
+                }
+                // Moves the figure down
+                if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+                {
+                    MoveDown();
+                    StopCoroutine("MoveDownRoutine");
+                    StartCoroutine("MoveDownRoutine");
+                    StopCoroutine("FallRoutine");
+                    StartCoroutine("FallRoutine");
+                }
                 // Rotate the figure
                 if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
                 {
                     RotateFigure();
-                    UpdateFigureHelper();
                 }
                 // Drop the figure
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
                     DropFigure();
-                    UpdateFigureHelper();
                 }
 
                 // Creates a new figure when the current figure is dropped
                 if (IsFigureDropped())
                 {
-                    BuildFigureIntoGlass();
+                    AddFigureIntoField();
                     RemoveFilledLines();
                     if (soundDrop) AudioSource.PlayClipAtPoint(soundDrop, new Vector3());
 
-                    figure.New((glassWidth / 2) - (Figure.width / 2), 0);
+                    figure.New((fieldWidth / 2) - (Figure.width / 2), 0);
 
-                    if (!IsFigureDropped())
+                    if (!IsFigureDropped() && IsThereFreeSpaceForNewFigure())
                     {
                         UpdateNextFigure();
                         CreateFigure();
@@ -596,6 +602,7 @@ namespace IlyaLts.Tetris
 
                     if (IsFigureDropped() || !IsThereFreeSpaceForNewFigure())
                     {
+                        DestroyFigure();
                         gameOver = true;
                         PanelGameOver.SetActive(true);
                         StopAllCoroutines();
@@ -613,11 +620,7 @@ namespace IlyaLts.Tetris
                 }
 
                 // Starts a new game
-                if (Input.GetKeyDown(KeyCode.Space))
-                {
-                    NewGame();
-                    PanelGameOver.SetActive(false);
-                }
+                if (Input.GetKeyDown(KeyCode.Space)) NewGame();
             }
         }
     }

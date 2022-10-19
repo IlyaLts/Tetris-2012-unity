@@ -20,30 +20,9 @@ using System;
 
 namespace IlyaLts.Tetris
 {
-    public struct Block
-    {
-        public const int width = 32;
-        public const int height = 32;
-
-        public enum Color
-        {
-            Cyen,
-            Blue,
-            Orange,
-            Yellow,
-            Green,
-            Purple,
-            Red
-        };
-
-        public bool filled;
-        public Color clr;
-        public GameObject obj;
-    }
-
     public class Figure
     {
-        public static readonly int[, , ,] figures = new int [NumOfFigures, numOfRotations, height, height]
+        public static readonly int[, , ,] figures = new int [NumOfFigures, numOfRotations, width, height]
         {
             // 1
             {
@@ -246,30 +225,19 @@ namespace IlyaLts.Tetris
         public int rot = 0;
         public int num = 0;
         public int numNext = 99999;
-        public Block[,] blocks = new Block[width, height];
+        public GameObject[,] blocks = new GameObject[width, height];
 
         public void New(int x, int y)
         {
             this.x = x;
             this.y = y;
             rot = 0;
-
-            if (numNext > NumOfFigures)
-                num = UnityEngine.Random.Range(0, NumOfFigures);
-            else
-                num = numNext;
-
+            num = numNext > NumOfFigures ? UnityEngine.Random.Range(0, NumOfFigures) : numNext;
             numNext = UnityEngine.Random.Range(0, NumOfFigures);
 
             for (int i = 0; i < width; i++)
-            {
                 for (int j = 0; j < height; j++)
-                {
-                    blocks[i, j].filled = Convert.ToBoolean(figures[num, rot, j, i]);
-                    blocks[i, j].clr = (Block.Color) num;
-                    blocks[i, j].obj = null;
-                }
-            }
+                    blocks[i, j] = null;
         }
 
         public void Rotate()
@@ -281,8 +249,7 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < height; j++)
                 {
-                    blocks[i, j].filled = Convert.ToBoolean(figures[num, rot, j, i]);
-                    blocks[i, j].clr = (Block.Color) num;
+                    // TODO
                 }
             }
         }
@@ -296,10 +263,9 @@ namespace IlyaLts.Tetris
             {
                 for (int j = 0; j < Figure.height; j++)
                 {   
-                    if (blocks[i, j].obj)
+                    if (blocks[i, j])
                     {
-                        Transform temp = blocks[i, j].obj.GetComponent<Transform>();
-                        temp.position = new Vector3(temp.position.x + Block.width * x, temp.position.y + Block.height * y);
+                        blocks[i, j].GetComponent<Block>().Move(x, y);
                     }
                 }
             }
