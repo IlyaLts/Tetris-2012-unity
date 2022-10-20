@@ -209,12 +209,8 @@ namespace IlyaLts.Tetris
                 bool filled = true;
 
                 for (int j = 0; j < fieldWidth; j++)
-                {
                     if (!field[j, i])
-                    {
                         filled = false;
-                    }
-                }
 
                 if (filled)
                 {

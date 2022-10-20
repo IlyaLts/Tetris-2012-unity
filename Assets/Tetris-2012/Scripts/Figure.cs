@@ -244,14 +244,6 @@ namespace IlyaLts.Tetris
         {
             rot++;
             if (rot == numOfRotations) rot = 0;
-
-            for (int i = 0; i < height; i++)
-            {
-                for (int j = 0; j < height; j++)
-                {
-                    // TODO
-                }
-            }
         }
 
         public void Move(int x, int y)
@@ -262,7 +254,7 @@ namespace IlyaLts.Tetris
             for (int i = 0; i < Figure.width; i++)
             {
                 for (int j = 0; j < Figure.height; j++)
-                {   
+                {
                     if (blocks[i, j])
                     {
                         blocks[i, j].GetComponent<Block>().Move(x, y);
