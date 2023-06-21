@@ -4,4 +4,4 @@ Yet one more Tetris! Just For Fun! This is a simple and addictive game where you
 
 A Unity port of [Tetris 2012](https://github.com/IlyaLts/Tetris-2012).
 
-![Tetris-2012-Unity](https://user-images.githubusercontent.com/5786770/222737253-49473557-b525-4e1f-8409-d9fe13ef4138.png)
+![Tetris-2012-Unity](https://github.com/IlyaLts/Tetris-2012-Unity/assets/5786770/80ed1f37-648b-4653-85be-4e76f15f3618)
