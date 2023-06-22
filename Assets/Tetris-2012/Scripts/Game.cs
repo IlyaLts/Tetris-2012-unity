@@ -481,14 +481,18 @@ namespace IlyaLts.Tetris
         {
             yield return new WaitForEndOfFrame();
 
-            if (!System.IO.Directory.Exists("Screenshots"))
-                System.IO.Directory.CreateDirectory("Screenshots");
+            string scrPath = System.AppDomain.CurrentDomain.BaseDirectory + "/Screenshots";
+
+            if (!System.IO.Directory.Exists(scrPath))
+                System.IO.Directory.CreateDirectory(scrPath);
 
             for (int i = 0; ; i++)
             {
-                if (!System.IO.File.Exists("Screenshots/Screenshot" + Convert.ToString(i) + ".png"))
+                string fullPath = scrPath + "/Screenshot" + Convert.ToString(i) + ".png";
+
+                if (!System.IO.File.Exists(fullPath))
                 {
-                    ScreenCapture.CaptureScreenshot(System.IO.Directory.GetCurrentDirectory() + "/Screenshots/Screenshot" + Convert.ToString(i) + ".png");
+                    ScreenCapture.CaptureScreenshot(fullPath);
                     break;
                 }
             }
